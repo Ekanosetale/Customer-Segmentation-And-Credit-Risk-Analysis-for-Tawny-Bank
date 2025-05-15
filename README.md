@@ -112,14 +112,35 @@ To uncover critical insights into customer financial health, credit risk, and tr
 
 ## Discussion And Insight
 
+![](3.png)
+Cards equipped with EMV chips are designed to offer stronger fraud protection than swipe or online transactions. So when chip-enabled cards (has_chip = 1) are repeatedly used for: Swipe Transactions (vulnerable to cloning) and Online Transactions (vulnerable to interception/card-not-present fraud) …it raises a red flag. A large number of transactions in your dataset are either “Online Transaction” or “Swipe Transaction”, despite all cards showing has_chip = 1. This means chip functionality is not being used, even when available.Example: Card IDs 4560, 4237, 3590, 1145 are involved in multiple non-chip transactions.
+
+Interestingly, all of these transactions are successful (errors = NULL), which could mask underlying fraud (fraud systems may not detect these immediately) Indicate a need to update fraud detection logic to include contextual flags like this one. Several of these transactions exceed ₦1,000–₦1,500, which is non-trivial — and in aggregate, they pose a potential monetary risk if fraudulent. For example: Client 236 transacts ₦1508.19 (Online), despite chip-enabled card. Client 149 transacts ₦1290.93 (Online), same situation.
+
+Some transactions occurred in places like TX, AZ, Lagos, and several with merchant_state as NULL — this may suggest:Remote or untraceable merchants Possible manipulation or incomplete logging — which makes traceability harder and fraud more likely
+
 ![](10.png)
+Over 70% of the customers in this sample fall into the High Risk category based on their debt-to-income (DTI) ratio, which is defined as the ratio of total debt to yearly income. This suggests that most customers have significant debt relative to their income, often with DTI values exceeding 1.0, and in some cases as high as 2.5. These customers may be financially strained, increasing the likelihood of missed payments or default. This insight is vital for risk management teams, who can prioritize these individuals for monitoring, intervention, or restructuring.
+
+Several customers have "Good" or even "Very Good" credit scores, yet are flagged as High Risk due to excessive debt. For example: Client 708 has a credit score of 722, but a DTI of 0.81 Client 1711 has a credit score of 728, but a DTI of 2.10This discrepancy highlights the limitations of relying solely on credit scores for risk assessments.
+
+Only a small number of customers fall into the Acceptable DTI range (< 0.36). These customers are more likely to be financially stable and have a better capacity to manage credit responsibly. Example: Client 1116 has a DTI of 0.07 and a Very Good credit score. These customers are ideal targets for premium credit products, credit line increases, or investment services.
+
+Some customers present unique profiles worth noting: Client 68: Has no debt and a Good credit score — possibly a new customer or one who recently paid off their obligations. Client 777: Has zero debt and a very high income (₦216,740) but only a credit score of 700s — an opportunity to upsell premium cards or investment products.
+
+Some customers manage to maintain good credit scores despite very high DTI, indicating they are likely making payments on time — but they are still overleveraged. These are vulnerable to economic shocks (e.g., job loss, inflation) and could shift from good payers to defaulters quickly.
+
+
+
+
+
 ![](9.png)
 ![](8.png)
 ![](7.png)
 ![](6.png)
 ![](5.png)
 ![](4.png)
-![](3.png)
+
 
 
 
