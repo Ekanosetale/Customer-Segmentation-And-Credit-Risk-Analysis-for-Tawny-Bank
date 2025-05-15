@@ -1,0 +1,257 @@
+-- 1.TRIGGER(To automatically detect and log suspicious card transactions
+--where a card that has a chip is not used via chip during a transaction)
+
+CREATE TABLE transaction_trigger_log (
+    log_id INT IDENTITY(1,1) PRIMARY KEY,
+    transaction_date DATETIME,
+    client_id INT,
+    card_id INT,
+    amount DECIMAL(18, 2),
+    merchant_city VARCHAR(255),
+    merchant_state VARCHAR(255),
+    has_chip BIT,
+    used_chip VARCHAR(255) ,
+    is_fraud_suspected BIT,
+    logged_at DATETIME DEFAULT GETDATE()
+);
+
+CREATE TRIGGER trg_flag_chip_bypass
+ON transactions_data
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO transaction_trigger_log (
+        transaction_date,
+        client_id,
+        card_id,
+        amount,
+        merchant_city,
+        merchant_state,
+        has_chip,
+        used_chip,
+        is_fraud_suspected
+    )
+    SELECT 
+        i.date,
+        i.client_id,
+        i.card_id,
+        i.amount,
+        i.merchant_city,
+        i.merchant_state,
+        c.has_chip,
+        i.use_chip,
+        1  -- Flag as fraud suspected
+    FROM inserted i
+    INNER JOIN cards_data c ON i.card_id = c.id
+    WHERE c.has_chip = 1 AND i.use_chip <> 'Chip Transaction'
+END;
+
+DROP TRIGGER trg_flag_chip_bypass;
+DROP TABLE transaction_trigger_log;
+
+INSERT INTO transactions_data (
+    id, date, client_id, card_id, amount,
+    use_chip, merchant_id, merchant_city,
+    merchant_state, zip, mcc, errors
+)
+VALUES (
+    201, GETDATE(), 1, 101, 1200.00,
+    0, 3001, 'Lagos', 'Lagos', '100001', 1234, NULL
+);
+
+
+SELECT * FROM transaction_trigger_log;
+
+-- 2.Block Cards  With Than 3 Consecutive Failed Transactions I in a Day. 
+WITH TransactionErrors AS (
+    SELECT 
+        card_id,
+        CAST([date] AS DATE) AS txn_date,
+        [date] AS txn_datetime,
+        errors,
+        CASE 
+            WHEN errors IS NOT NULL AND errors <> '' THEN 1 
+            ELSE 0 
+        END AS is_error
+    FROM transactions_data
+),
+
+ErrorGroups AS (
+    SELECT *,
+        ROW_NUMBER() OVER (PARTITION BY card_id, txn_date ORDER BY txn_datetime) 
+        - 
+        ROW_NUMBER() OVER (PARTITION BY card_id, txn_date, is_error ORDER BY txn_datetime) 
+        AS group_id
+    FROM TransactionErrors
+),
+
+ConsecutiveErrorCounts AS (
+    SELECT 
+        card_id,
+        txn_date,
+        group_id,
+        COUNT(*) AS consecutive_error_count
+    FROM ErrorGroups
+    WHERE is_error = 1
+    GROUP BY card_id, txn_date, group_id
+)
+
+-- Final blocked cards
+SELECT DISTINCT 
+    card_id,
+    txn_date,
+    'BLOCKED' AS status_reason
+FROM ConsecutiveErrorCounts
+WHERE consecutive_error_count >= 3;
+
+
+-- 3 Transaction Above $1000 done without chip even though the card is chip enabled.
+SELECT 
+    t.client_id,
+	t.card_id,
+	t.amount,
+	t.merchant_city,
+	t.merchant_state,
+	t.errors,
+	c.has_chip,
+	t.use_chip,
+	c.credit_limit
+    FROM transactions_data t 
+    INNER JOIN cards_data c ON t.card_id = c.id
+WHERE t.amount >= 1000  AND t.use_chip <> 'Chip Transaction' AND c.has_chip = 1
+ORDER BY t.amount DESC;
+
+-- 4. Flag  more than 3 transactions done with an hour online at different locations and 
+--where the amount was increased per transaction
+WITH ordered_txn AS (
+    SELECT
+        t1.id,
+        t1.card_id,
+        t1.client_id,
+        t1.date,
+        t1.amount,
+        t1.merchant_state,
+        t1.merchant_city,
+        (
+            SELECT COUNT(*)
+            FROM transactions_data t2
+            WHERE t2.card_id = t1.card_id
+              AND t2.merchant_city = 'Online'
+              AND DATEDIFF(MINUTE, t2.date, t1.date) BETWEEN 0 AND 60
+        ) AS txn_count,
+        (
+            SELECT COUNT(DISTINCT t2.merchant_city)
+            FROM transactions_data t2
+            WHERE t2.card_id = t1.card_id
+              AND t2.merchant_city = 'Online'
+              AND DATEDIFF(MINUTE, t2.date, t1.date) BETWEEN 0 AND 60
+        ) AS distinct_locations,
+        LAG(t1.amount) OVER (PARTITION BY t1.card_id ORDER BY t1.date) AS prev_amount
+    FROM transactions_data t1
+    WHERE t1.merchant_city = 'Online'
+)
+SELECT *
+FROM ordered_txn
+WHERE txn_count > 3
+  AND distinct_locations > 1
+  AND amount > ISNULL(prev_amount, 0)
+ORDER BY card_id, date;
+
+-- 5. Merchant Category by Total Transactions and Total Spend
+SELECT TOP 10
+    m.Description AS MerchantCategory,
+    COUNT(t.id) AS TotalTransactions,
+    CAST(SUM(t.amount) AS INT) AS TotalSpend
+FROM transactions_data t
+JOIN mcc_codes m ON t.merchant_id = m.mcc_id
+GROUP BY m.Description
+ORDER BY TotalSpend DESC;
+
+-- 6. Total transactions and Total Spend by Merchant City and State.
+SELECT TOP 10
+    t.merchant_city,
+	t.merchant_state,
+    COUNT(t.id) AS TotalTransactions,
+    CAST(SUM(t.amount) AS INT) AS TotalSpend
+FROM transactions_data t
+JOIN mcc_codes m ON t.merchant_id = m.mcc_id
+GROUP BY m.Description,  t.merchant_city,t.merchant_state
+ORDER BY TotalSpend DESC;
+
+-- 7.Most Common Card Errors
+SELECT 
+    errors AS Type0fError,
+    COUNT(*) AS TotalError
+FROM transactions_data
+WHERE errors IS NOT NULL AND errors <> ''
+GROUP BY errors
+ORDER BY TotalError DESC;
+
+-- 8.Error Rate By State
+SELECT 
+   t.merchant_state,
+    COUNT(*) AS Total_Transaction,
+    SUM(CASE WHEN errors IS NOT NULL AND errors <> '' THEN 1 ELSE 0 END) AS TotalError,
+    CAST(SUM(CASE WHEN errors IS NOT NULL AND errors <> '' THEN 1 ELSE 0 END) * 100.0 / 
+	COUNT(*) AS DECIMAL(5,2)) AS ErrorRate
+FROM transactions_data t
+GROUP BY merchant_state
+ORDER BY ErrorRate DESC;
+
+--9.Error Rate By Card Type
+SELECT 
+    c.card_type,
+    COUNT(*) AS total_Transactions,
+    SUM(CASE WHEN t.errors IS NOT NULL AND t.errors <> '' THEN 1 ELSE 0 END) AS TotalError,
+    CAST(SUM(CASE WHEN t.errors IS NOT NULL AND t.errors <> '' THEN 1 ELSE 0 END) * 100.0 /
+	COUNT(*) AS DECIMAL(5,2)) AS Error_Rate
+FROM transactions_data t
+JOIN cards_data c ON t.card_id = c.id
+GROUP BY c.card_type
+ORDER BY Error_Rate DESC;
+
+-- 10.Customer Credit Risk Segmentation Based on Debt-to-Income Ratio and Credit Score Categories
+SELECT 
+    id AS client_id,
+    credit_score,
+    total_debt,
+    yearly_income,
+    
+    -- Debt-to-Income Ratio
+    CAST(total_debt * 1.0 / NULLIF(yearly_income, 0) AS DECIMAL(6,2)) AS debt_to_income_ratio,
+
+    -- DTI Risk Category
+    CASE 
+        WHEN (total_debt * 1.0 / NULLIF(yearly_income, 0)) < 0.36 THEN 'Acceptable'
+        WHEN (total_debt * 1.0 / NULLIF(yearly_income, 0)) BETWEEN 0.36 AND 0.49 THEN 'Moderate Risk'
+        WHEN (total_debt * 1.0 / NULLIF(yearly_income, 0)) >= 0.50 THEN 'High Risk'
+        ELSE 'Unknown'
+    END AS dti_category,
+
+    -- Credit Score Category
+    CASE 
+        WHEN credit_score >= 800 THEN 'Excellent'
+        WHEN credit_score >= 740 THEN 'Very Good'
+        WHEN credit_score >= 670 THEN 'Good'
+        WHEN credit_score >= 580 THEN 'Fair'
+        ELSE 'Poor'
+    END AS credit_score_category
+
+FROM users_data
+WHERE yearly_income > 0;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
