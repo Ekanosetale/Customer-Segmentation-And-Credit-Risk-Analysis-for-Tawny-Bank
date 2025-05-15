@@ -8,7 +8,7 @@ This project focuses on delivering strategic insights to Tawny Bank by analyzing
 
 CARDS DATA SCHEMA
 
-id (Primary Key)	 Unique identifier for each credit card.
+id (Primary Key) -----Unique identifier for each credit card.
 
 client_id (Foreign Key to users_data.id)	 Identifier linking the card to its owner in the users_data table.
 
@@ -142,10 +142,8 @@ Some transactions occurred in places like TX, AZ, Lagos, and several with mercha
 
 ## Anti Fraud Logic and Triggers
 
-As part of the transactional risk analysis for the Bank, I developed a targeted SQL routine designed to identify suspicious online spending behavior that may signal potential card compromise, both activity, or coordinated fraud attempts.
-The logic focuses specifically on: Online transactions on the same card within a short time frame (60 minutes) across more than one merchant location	and with a pattern of increasing transaction amounts.
-I flag any card that has more than three online transactions within one hour, where the transactions originate from multiple merchant cities and the transaction amount increases relative to the previous one.
-This pattern is a classic indicator of card testing, where fraudsters: Initiate small transactions to validate a compromised card, use different online merchant routes or IPs and gradually escalate the amount once initial transactions succeed. This detection strategy helps us: Identify compromised cards early before larger fraudulent losses occur,detect automated or bot-driven attacks exploiting online platforms and Surface geographic inconsistencies in transaction behavior (e.g., multiple locations in one hour is highly unlikely for a legitimate customer)
+As part of the transactional risk analysis for the Bank, I developed a targeted SQL routine designed to identify suspicious online spending behavior that may signal potential card compromise, both activity, or coordinated fraud attempts.The logic focuses specifically on: Online transactions on the same card within a short time frame (60 minutes) across more than one merchant location	and with a pattern of increasing transaction amounts. I flag any card that has more than three online transactions within one hour, where the transactions originate from multiple merchant cities and the transaction amount increases relative to the previous one. This pattern is a classic indicator of card testing, where fraudsters: Initiate small transactions to validate a compromised card, use different online merchant routes or IPs and gradually escalate the amount once initial transactions succeed. This detection strategy helps us: Identify compromised cards early before larger fraudulent losses occur,detect automated or bot-driven attacks exploiting online platforms and Surface geographic inconsistencies in transaction behavior (e.g., multiple locations in one hour is highly unlikely for a legitimate customer)
+
 More importantly, this rule applies only to cards equipped with EMV chips, yet used in non-chip channels like online, where security is inherently lower. The business implications of this is that: A reduce fraud-related financial exposure, improves cardholder trust by proactively securing accounts and supports compliance with industry best practices for transaction monitoring. 
 
 As to  mitigation fruadulent activities experienced by the bank, I implemented a SQL Server trigger designed to automatically monitor and log suspicious card transactions specifically cases where chip enabled cards are not used via chip. This logic is built on the premise that EMV chip technology offers significantly higher protection against fraud compared to magnetic stripe (swipe) or card-not-present (online) transactions. When a card equipped with a chip is used in a non-chip transaction, it potentially indicates: card cloning (especially if swiped), unauthorized online use and customer behavior deviation. This logic helps to detects risky behavior as it happens, not post-fraud , targets one of the most common fraud vectors and builds a centralized log of potentially fraudulent events for review and machine learning enrichment among others. 
@@ -153,6 +151,7 @@ As to  mitigation fruadulent activities experienced by the bank, I implemented a
 Lastly, I created a logic that identifies credit cards that have experienced more than 3 consecutive failed transactions within a single day. These repeated failures can indicate; Potential fraud attempts (e.g., brute-force PIN guessing), stolen card misuse, malfunctioning or misconfigured cards or terminals and system abuse or bot activity. By flagging consecutive failures, this logic detects fraud-in-progress, allowing the bank to block the card before a successful fraudulent transaction occurs.
 
 ![](10.png)
+
 Over 70% of the customers fall into the High Risk category based on their debt-to-income (DTI) ratio, which is defined as the ratio of total debt to yearly income. This suggests that most customers have significant debt relative to their income, often with DTI values exceeding 1.0, and in some cases as high as 2.5. These customers may be financially strained, increasing the likelihood of missed payments or default. This insight is vital for risk management teams, who can prioritize these individuals for monitoring, intervention, or restructuring.
 
 Several customers have "Good" or even "Very Good" credit scores, yet are flagged as High Risk due to excessive debt. For example: Client 708 has a credit score of 722, but a DTI of 0.81 Client 1711 has a credit score of 728, but a DTI of 2.10This discrepancy highlights the limitations of relying solely on credit scores for risk assessments.
@@ -164,13 +163,16 @@ Some customers present unique profiles worth noting: Client 68: Has no debt and 
 Some customers manage to maintain good credit scores despite very high DTI, indicating they are likely making payments on time  but they are still overleveraged. These are vulnerable to economic shocks (e.g., job loss, inflation) and could shift from good payers to defaulters quickly.
 
 ![](7.png)
+
 Over 70% of all transaction errors are due to “Insufficient Balance”   This indicates that a large number of customers are attempting transactions beyond their available funds or credit limits. Next to that is Authentication Failures Signal Possible Fraud Attempts such as Bad PIN and Bad CVV errors. These are typical in unauthorized usage or brute-force attempts. While some may be user error, repeated failures—especially when combined may point to card testing or fraud. Other technical errors include bad card numbers and expired card attempts. These could be caused by POS system incompatibilities, merchant-side failures, or data formatting issues. However, the risk here is that this undermines customer trust and contributes to failed transactions that can impact revenue.
 
 
 ![](8.png)
+
 Regions such as South Korea (33.33% error rate), Wyoming (WY) (6.90%), and Ireland (5.56%) report notably high error percentages. However, it’s important to emphasize that these regions also recorded very low transaction volumes, which means; the high error rates may not be statistically significant and the data could be skewed by a small number of problematic.  States such as Alabama (1.57%), Missouri (1.59%), Iowa (1.60%), and New York (1.66%) show consistently low error rates, despite handling a large number of transactions. This suggests; Stable processing environments, potentially stronger merchant infrastructure and more mature payment systems in these areas
 
 ![](9.png)
+
 All card types have error rates below 2%, which suggests that our core transaction processing infrastructure is fundamentally stable and performing well.While the error rate is relatively low, the high volume of debit card usage makes even small inefficiencies impactful at scale.Credit cards perform slightly better than debit, suggesting more consistent authorizations or fewer user-related issues (e.g., overdraft limits).Prepaid cards outperform others, which may be due to stricter limits, preloaded balances, or simplified processing paths.
 
 ## Recommendation
