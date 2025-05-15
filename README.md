@@ -119,7 +119,7 @@ Interestingly, all of these transactions are successful, which could mask underl
 
 Some transactions occurred in places like TX, AZ, Lagos, and several with merchant_state as NULL — this may suggest:Remote or untraceable merchants Possible manipulation or incomplete logging — which makes traceability harder and fraud more likely
 
-## Anti Fraud Logic
+## Anti Fraud Logic and Triggers
 
 As part of the transactional risk analysis for the Bank, I developed a targeted SQL routine designed to identify suspicious online spending behavior that may signal potential card compromise, both activity, or coordinated fraud attempts.
 The logic focuses specifically on: Online transactions on the same card within a short time frame (60 minutes) across more than one merchant location	and with a pattern of increasing transaction amounts.
