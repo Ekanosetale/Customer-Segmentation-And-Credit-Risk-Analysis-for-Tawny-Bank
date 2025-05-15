@@ -178,22 +178,37 @@ All card types have error rates below 2%, which suggests that our core transacti
 ## Recommendation
 
 •	Block cards after 3+ consecutive failed transactions per day
+
 •	Flag chip-enabled cards used via swipe or online as potential fraud
+
 •	Detect multiple online transactions within 1 hour from different locations
+
 •	Monitor repeated bad PIN/CVV attempts for card compromise
+
 •	Focus on debit card error reduction — high volume, highest error rate (1.80%)
+
 •	Benchmark prepaid card systems — lowest error rate (1.50%) despite tighter limits
+
 •	Identify and monitor users with high DTI + poor credit scores
+
 •	Target financially healthy customers for premium offers
+
 •	Segment customers by behavior, not just credit score
+
 •	Investigate high-error regions (e.g., South Korea, Wyoming) cautiously due to low volume
+
 •	Audit NULL merchant location data (17,000+ records) for better risk visibility
+
 •	Use low-error regions (e.g., AL, MO, NY) as system reliability benchmarks
+
 •	Keep fraud trigger logs active for chip bypass detection
+
 •	Monitor monthly error trends across card types and locations
+
 •	Align fraud sensitivity with seasonal transaction spikes
 
 ## Conclusion
+
 This project provided a comprehensive analysis of Aurora Bank’s customer behavior, transaction performance, credit risk, and fraud exposure. Through in-depth segmentation, error tracking, and fraud detection logic, we uncovered actionable insights to strengthen security, improve operational efficiency, and support data-driven decision-making. By combining technical rigor with strategic recommendations, this analysis equips the bank with the tools to enhance customer trust, reduce risk, and optimize transaction reliability across all card types and regions.
 
 
