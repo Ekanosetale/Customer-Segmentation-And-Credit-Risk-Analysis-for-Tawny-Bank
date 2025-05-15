@@ -113,6 +113,7 @@ To uncover critical insights into customer financial health, credit risk, and tr
 ## Discussion And Insight
 
 ![](3.png)
+
 Cards equipped with EMV chips are designed to offer stronger fraud protection than swipe or online transactions. So when chip-enabled cards are repeatedly used for Swipe Transactions (vulnerable to cloning) and Online Transactions (vulnerable to interception/card-not-present fraud) it raises a red flag. A large number of transactions in analysis are either “Online Transaction” or “Swipe Transaction”, despite all cards has chip. This means chip functionality is not being used, even when available.Example: Card IDs 4560, 4237, 3590, 1145 are involved in multiple non-chip transactions.
 
 Interestingly, all of these transactions are successful, which could mask underlying fraud (fraud systems may not detect these immediately) Indicate a need to update fraud detection logic to include contextual flags like this one.  More so several of these transactions exceed $1,000–$1,500, which is non-trivial — and in aggregate, they pose a potential monetary risk if fraudulent. For example: Client 236 transacts $1508.19 (Online), despite chip-enabled card. Client 149 transacts $1290.93 (Online), same situation.
@@ -142,17 +143,36 @@ Some customers present unique profiles worth noting: Client 68: Has no debt and 
 
 Some customers manage to maintain good credit scores despite very high DTI, indicating they are likely making payments on time  but they are still overleveraged. These are vulnerable to economic shocks (e.g., job loss, inflation) and could shift from good payers to defaulters quickly.
 
+![](7.png)
+Over 70% of all transaction errors are due to “Insufficient Balance”   This indicates that a large number of customers are attempting transactions beyond their available funds or credit limits. Next to that is Authentication Failures Signal Possible Fraud Attempts such as Bad PIN and Bad CVV errors. These are typical in unauthorized usage or brute-force attempts. While some may be user error, repeated failures—especially when combined may point to card testing or fraud. Other technical errors include bad card numbers and expired card attempts. These could be caused by POS system incompatibilities, merchant-side failures, or data formatting issues. However, the risk here is that this undermines customer trust and contributes to failed transactions that can impact revenue.
 
 
-
-
+![](8.png)
+Regions such as South Korea (33.33% error rate), Wyoming (WY) (6.90%), and Ireland (5.56%) report notably high error percentages. However, it’s important to emphasize that these regions also recorded very low transaction volumes, which means; the high error rates may not be statistically significant and the data could be skewed by a small number of problematic.  States such as Alabama (1.57%), Missouri (1.59%), Iowa (1.60%), and New York (1.66%) show consistently low error rates, despite handling a large number of transactions. This suggests; Stable processing environments, potentially stronger merchant infrastructure and more mature payment systems in these areas
 
 ![](9.png)
-![](8.png)
-![](7.png)
-![](6.png)
-![](5.png)
-![](4.png)
+All card types have error rates below 2%, which suggests that our core transaction processing infrastructure is fundamentally stable and performing well.While the error rate is relatively low, the high volume of debit card usage makes even small inefficiencies impactful at scale.Credit cards perform slightly better than debit, suggesting more consistent authorizations or fewer user-related issues (e.g., overdraft limits).Prepaid cards outperform others, which may be due to stricter limits, preloaded balances, or simplified processing paths.
+
+## Recommendation
+
+•	Block cards after 3+ consecutive failed transactions per day
+•	Flag chip-enabled cards used via swipe or online as potential fraud
+•	Detect multiple online transactions within 1 hour from different locations
+•	Monitor repeated bad PIN/CVV attempts for card compromise
+•	Focus on debit card error reduction — high volume, highest error rate (1.80%)
+•	Benchmark prepaid card systems — lowest error rate (1.50%) despite tighter limits
+•	Identify and monitor users with high DTI + poor credit scores
+•	Target financially healthy customers for premium offers
+•	Segment customers by behavior, not just credit score
+•	Investigate high-error regions (e.g., South Korea, Wyoming) cautiously due to low volume
+•	Audit NULL merchant location data (17,000+ records) for better risk visibility
+•	Use low-error regions (e.g., AL, MO, NY) as system reliability benchmarks
+•	Keep fraud trigger logs active for chip bypass detection
+•	Monitor monthly error trends across card types and locations
+•	Align fraud sensitivity with seasonal transaction spikes
+
+## Conclusion
+This project provided a comprehensive analysis of Aurora Bank’s customer behavior, transaction performance, credit risk, and fraud exposure. Through in-depth segmentation, error tracking, and fraud detection logic, we uncovered actionable insights to strengthen security, improve operational efficiency, and support data-driven decision-making. By combining technical rigor with strategic recommendations, this analysis equips the bank with the tools to enhance customer trust, reduce risk, and optimize transaction reliability across all card types and regions.
 
 
 
