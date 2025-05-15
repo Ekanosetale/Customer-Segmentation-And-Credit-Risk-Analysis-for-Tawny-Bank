@@ -4,20 +4,6 @@
 
 This project focuses on delivering strategic insights to Tawny Bank by analyzing customer demographics, credit behavior, and transaction patterns. Leveraging data from multiple sources users, credit cards, transactions, and merchant categories the analysis aims to evaluate financial health, detect fraud risks, and support personalized engagement strategies. Using SQL for data preparation and Power BI for visualization, the project provides a comprehensive view of customer profiles and risk indicators to drive data-informed decision-making.
 
-## Objective
-
-To uncover critical insights into customer financial health, credit risk, and transactional anomalies by analyzing integrated datasets from users, credit cards, transactions, and merchant categories. The goal was to support decision making across fraud detection, and risk management at Tawny Bank. The object of the analysis was further broken down to include:
-
-1. Analyzed spending trends by Merchant Category (MCC) and merchant location.
-
-2. Identified high-value transactions and flagged suspicious out-of-state online spending.
-
-3. Calculated error rates by merchant state and card type.
-
-4. Detected fraud behavior by flagging cards with 3+ consecutive failed transactions within a day.
-
-5. Assessed regional risk using average credit scores by merchant state.
-
 ## About The Dataset
 
 CARDS DATA SCHEMA
@@ -107,6 +93,25 @@ zip	 ZIP code of the merchant's location.
 mcc (Foreign Key to mcc_codes.mcc_id)	 Merchant Category Code representing the type of merchant or transaction.
 
 errors	 Any errors encountered during the transaction (if any).
+
+## Tool Used: SQL Server
+
+## Objective
+
+To uncover critical insights into customer financial health, credit risk, and transactional anomalies by analyzing integrated datasets from users, credit cards, transactions, and merchant categories. The goal was to support decision making across fraud detection, and risk management at Tawny Bank. The object of the analysis was further broken down to include:
+
+1. Analyzed spending trends by Merchant Category (MCC) and merchant location.
+
+2. Identified high-value transactions and flagged suspicious out-of-state online spending.
+
+3. Calculated error rates by merchant state and card type.
+
+4. Detected fraud behavior by flagging cards with 3+ consecutive failed transactions within a day.
+
+5. Assessed regional risk using average credit scores by merchant state.
+
+## Discussion And Insight
+
 
 
 
