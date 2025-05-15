@@ -150,6 +150,7 @@ As to  mitigation fruadulent activities experienced by the bank, I implemented a
 
 Lastly, I created a logic that identifies credit cards that have experienced more than 3 consecutive failed transactions within a single day. These repeated failures can indicate; Potential fraud attempts (e.g., brute-force PIN guessing), stolen card misuse, malfunctioning or misconfigured cards or terminals and system abuse or bot activity. By flagging consecutive failures, this logic detects fraud-in-progress, allowing the bank to block the card before a successful fraudulent transaction occurs.
  Trigger and Logic code are  ![here](SQLcodes)
+ 
 ![](10.png)
 
 Over 70% of the customers fall into the High Risk category based on their debt-to-income (DTI) ratio, which is defined as the ratio of total debt to yearly income. This suggests that most customers have significant debt relative to their income, often with DTI values exceeding 1.0, and in some cases as high as 2.5. These customers may be financially strained, increasing the likelihood of missed payments or default. This insight is vital for risk management teams, who can prioritize these individuals for monitoring, intervention, or restructuring.
