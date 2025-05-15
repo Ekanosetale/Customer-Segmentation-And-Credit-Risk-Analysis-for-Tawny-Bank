@@ -100,15 +100,35 @@ errors	 Any errors encountered during the transaction (if any).
 
 To uncover critical insights into customer financial health, credit risk, and transactional anomalies by analyzing integrated datasets from users, credit cards, transactions, and merchant categories. The goal was to support decision making across fraud detection, and risk management at Tawny Bank. The object of the analysis was further broken down to include:
 
-1. Analyzed spending trends by Merchant Category (MCC) and merchant location.
+Understand Customer Profiles & Financial Health
 
-2. Identified high-value transactions and flagged suspicious out-of-state online spending.
+• Segment customers by age, gender, location, credit score, and debt-to-income ratio
 
-3. Calculated error rates by merchant state and card type.
+• Identify high-risk and financially stable customer groups for targeted engagement
 
-4. Detected fraud behavior by flagging cards with 3+ consecutive failed transactions within a day.
+Evaluate Transaction Behavior & Patterns
 
-5. Assessed regional risk using average credit scores by merchant state.
+• Analyze spending by merchant category, location, and payment method (chip, swipe, online)
+
+• Track high-value transactions and out-of-state activity to identify abnormal behavior
+
+Detect and Prevent Fraud
+
+• Implement logic to flag suspicious patterns like chip bypass, consecutive transaction failures, and online transaction bursts
+
+• Create real-time triggers to log potentially fraudulent activity for early intervention
+
+Assess Transaction System Reliability
+
+• Measure and compare error rates across card types, regions, and error categories
+
+• Highlight technical or process inefficiencies affecting the customer experience
+
+Support Data-Driven Decisions
+
+• Provide actionable insights for risk management, customer engagement, and operational improvement
+
+• Deliver visual, interpretable outputs (e.g., Power BI dashboards) to inform stakeholders
 
 ## Discussion And Insight
 
