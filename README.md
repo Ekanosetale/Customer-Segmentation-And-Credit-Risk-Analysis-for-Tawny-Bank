@@ -113,6 +113,20 @@ To uncover critical insights into customer financial health, credit risk, and tr
 ## Discussion And Insight
 
 ![](10.png)
+![](9.png)
+![](8.png)
+![](7.png)
+![](6.png)
+![](5.png)
+![](4.png)
+![](3.png)
 
-10.png
+
+
+
+
+
+
+
+
 
