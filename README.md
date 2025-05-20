@@ -132,6 +132,23 @@ Support Data-Driven Decisions
 
 ## Discussion And Insight
 
+   #### Transaction Above $1000 done without chip even though the card is chip enabled.
+     SELECT 
+         t.client_id,
+     	t.card_id,
+     	t.amount,
+     	t.merchant_city,
+     	t.merchant_state,
+     	t.errors,
+     	c.has_chip,
+     	t.use_chip,
+     	c.credit_limit
+         FROM transactions_data t 
+         INNER JOIN cards_data c ON t.card_id = c.id
+     WHERE t.amount >= 1000  AND t.use_chip <> 'Chip Transaction' AND c.has_chip = 1
+     ORDER BY t.amount DESC;
+
+
 ![](3.png)
 
 Cards equipped with EMV chips are designed to offer stronger fraud protection than swipe or online transactions. So when chip-enabled cards are repeatedly used for Swipe Transactions (vulnerable to cloning) and Online Transactions (vulnerable to interception/card-not-present fraud) it raises a red flag. A large number of transactions in analysis are either “Online Transaction” or “Swipe Transaction”, despite all cards has chip. This means chip functionality is not being used, even when available.Example: Card IDs 4560, 4237, 3590, 1145 are involved in multiple non-chip transactions.
@@ -142,14 +159,188 @@ Some transactions occurred in places like TX, AZ, Lagos, and several with mercha
 
 ## Anti Fraud Logic and Triggers
 
-As part of the transactional risk analysis for the Bank, I developed a targeted SQL routine designed to identify suspicious online spending behavior that may signal potential card compromise, both activity, or coordinated fraud attempts.The logic focuses specifically on: Online transactions on the same card within a short time frame (60 minutes) across more than one merchant location	and with a pattern of increasing transaction amounts. I flag any card that has more than three online transactions within one hour, where the transactions originate from multiple merchant cities and the transaction amount increases relative to the previous one. This pattern is a classic indicator of card testing, where fraudsters: Initiate small transactions to validate a compromised card, use different online merchant routes or IPs and gradually escalate the amount once initial transactions succeed. This detection strategy helps us: Identify compromised cards early before larger fraudulent losses occur,detect automated or bot-driven attacks exploiting online platforms and Surface geographic inconsistencies in transaction behavior (e.g., multiple locations in one hour is highly unlikely for a legitimate customer)
+##### Flag  more than 3 transactions done with an hour online at different locations and where the amount was increased per transaction
+
+     WITH ordered_txn AS (
+         SELECT
+             t1.id,
+             t1.card_id,
+             t1.client_id,
+             t1.date,
+             t1.amount,
+             t1.merchant_state,
+             t1.merchant_city,
+             (
+                 SELECT COUNT(*)
+                 FROM transactions_data t2
+                 WHERE t2.card_id = t1.card_id
+                   AND t2.merchant_city = 'Online'
+                   AND DATEDIFF(MINUTE, t2.date, t1.date) BETWEEN 0 AND 60
+             ) AS txn_count,
+             (
+                 SELECT COUNT(DISTINCT t2.merchant_city)
+                 FROM transactions_data t2
+                 WHERE t2.card_id = t1.card_id
+                   AND t2.merchant_city = 'Online'
+                   AND DATEDIFF(MINUTE, t2.date, t1.date) BETWEEN 0 AND 60
+             ) AS distinct_locations,
+             LAG(t1.amount) OVER (PARTITION BY t1.card_id ORDER BY t1.date) AS prev_amount
+         FROM transactions_data t1
+         WHERE t1.merchant_city = 'Online'
+     )
+     SELECT *
+     FROM ordered_txn
+     WHERE txn_count > 3
+       AND distinct_locations > 1
+       AND amount > ISNULL(prev_amount, 0)
+     ORDER BY card_id, date;
+     
+As part of the transactional risk analysis for the Bank, I developed a targeted SQL routine designed to identify suspicious online spending behavior that may signal potential card compromise, both activity, or coordinated fraud attempts.The logic focuses specifically on: Online transactions on the same card within a short time frame (60 minutes) across more than one merchant location	and with a pattern of increasing transaction amounts. I flag any card that has more than three online transactions within one hour, where the transactions originate from multiple merchant cities and the transaction amount increases relative to the previous one. This pattern is a classic indicator of card testing, where fraudsters initiate small transactions to validate a compromised card, use different online merchant routes or IPs and gradually escalate the amount once initial transactions succeed. This detection strategy helps us; Identify compromised cards early before larger fraudulent losses occur, detect automated or bot-driven attacks exploiting online platforms and Surface geographic inconsistencies in transaction behavior (e.g., multiple locations in one hour is highly unlikely for a legitimate customer)
 
 More importantly, this rule applies only to cards equipped with EMV chips, yet used in non-chip channels like online, where security is inherently lower. The business implications of this is that: A reduce fraud-related financial exposure, improves cardholder trust by proactively securing accounts and supports compliance with industry best practices for transaction monitoring. 
 
+#### TRIGGER(To automatically detect and log suspicious card transactions where a card that has a chip is not used via chip during a transaction)
+
+     CREATE TABLE transaction_trigger_log (
+         log_id INT IDENTITY(1,1) PRIMARY KEY,
+         transaction_date DATETIME,
+         client_id INT,
+         card_id INT,
+         amount DECIMAL(18, 2),
+         merchant_city VARCHAR(255),
+         merchant_state VARCHAR(255),
+         has_chip BIT,
+         used_chip VARCHAR(255) ,
+         is_fraud_suspected BIT,
+         logged_at DATETIME DEFAULT GETDATE()
+     );
+     CREATE TRIGGER trg_flag_chip_bypass
+     ON transactions_data
+     AFTER INSERT
+     AS
+     BEGIN
+         SET NOCOUNT ON;
+     
+         INSERT INTO transaction_trigger_log (
+             transaction_date,
+             client_id,
+             card_id,
+             amount,
+             merchant_city,
+             merchant_state,
+             has_chip,
+             used_chip,
+             is_fraud_suspected
+         )
+         SELECT 
+             i.date,
+             i.client_id,
+             i.card_id,
+             i.amount,
+             i.merchant_city,
+             i.merchant_state,
+             c.has_chip,
+             i.use_chip,
+             1  -- Flag as fraud suspected
+         FROM inserted i
+         INNER JOIN cards_data c ON i.card_id = c.id
+         WHERE c.has_chip = 1 AND i.use_chip <> 'Chip Transaction'
+     END;
+     
+     DROP TRIGGER trg_flag_chip_bypass;
+     DROP TABLE transaction_trigger_log;
+     
+     INSERT INTO transactions_data (
+         id, date, client_id, card_id, amount,
+         use_chip, merchant_id, merchant_city,
+         merchant_state, zip, mcc, errors
+     )
+     VALUES (
+         201, GETDATE(), 1, 101, 1200.00,
+         0, 3001, 'Lagos', 'Lagos', '100001', 1234, NULL
+     );
+
+     SELECT * FROM transaction_trigger_log;
+
+
 As to  mitigation fruadulent activities experienced by the bank, I implemented a SQL Server trigger designed to automatically monitor and log suspicious card transactions specifically cases where chip enabled cards are not used via chip. This logic is built on the premise that EMV chip technology offers significantly higher protection against fraud compared to magnetic stripe (swipe) or card-not-present (online) transactions. When a card equipped with a chip is used in a non-chip transaction, it potentially indicates: card cloning (especially if swiped), unauthorized online use and customer behavior deviation. This logic helps to detects risky behavior as it happens, not post-fraud , targets one of the most common fraud vectors and builds a centralized log of potentially fraudulent events for review and machine learning enrichment among others. 
 
+#### Block Cards  With Than 3 Consecutive Failed Transactions I in a Day. 
+
+     WITH TransactionErrors AS (
+         SELECT 
+             card_id,
+             CAST([date] AS DATE) AS txn_date,
+             [date] AS txn_datetime,
+             errors,
+             CASE 
+                 WHEN errors IS NOT NULL AND errors <> '' THEN 1 
+                 ELSE 0 
+             END AS is_error
+         FROM transactions_data
+     ),
+     
+     ErrorGroups AS (
+         SELECT *,
+             ROW_NUMBER() OVER (PARTITION BY card_id, txn_date ORDER BY txn_datetime) 
+             - 
+             ROW_NUMBER() OVER (PARTITION BY card_id, txn_date, is_error ORDER BY txn_datetime) 
+             AS group_id
+         FROM TransactionErrors
+     ),
+     
+     ConsecutiveErrorCounts AS (
+         SELECT 
+             card_id,
+             txn_date,
+             group_id,
+             COUNT(*) AS consecutive_error_count
+         FROM ErrorGroups
+         WHERE is_error = 1
+         GROUP BY card_id, txn_date, group_id
+     )
+     
+     -- Final blocked cards
+     SELECT DISTINCT 
+         card_id,
+         txn_date,
+         'BLOCKED' AS status_reason
+     FROM ConsecutiveErrorCounts
+     WHERE consecutive_error_count >= 3;
+
 Lastly, I created a logic that identifies credit cards that have experienced more than 3 consecutive failed transactions within a single day. These repeated failures can indicate; Potential fraud attempts (e.g., brute-force PIN guessing), stolen card misuse, malfunctioning or misconfigured cards or terminals and system abuse or bot activity. By flagging consecutive failures, this logic detects fraud-in-progress, allowing the bank to block the card before a successful fraudulent transaction occurs.
- Trigger and Logic code are  ![here](SQLcodes)
+
+#### Customer Credit Risk Segmentation Based on Debt-to-Income Ratio and Credit Score Categories
+
+     SELECT 
+         id AS client_id,
+         credit_score,
+         total_debt,
+         yearly_income,
+       
+         -- Debt-to-Income Ratio
+         CAST(total_debt * 1.0 / NULLIF(yearly_income, 0) AS DECIMAL(6,2)) AS debt_to_income_ratio,
+     
+         -- DTI Risk Category
+         CASE 
+             WHEN (total_debt * 1.0 / NULLIF(yearly_income, 0)) < 0.36 THEN 'Acceptable'
+             WHEN (total_debt * 1.0 / NULLIF(yearly_income, 0)) BETWEEN 0.36 AND 0.49 THEN 'Moderate Risk'
+             WHEN (total_debt * 1.0 / NULLIF(yearly_income, 0)) >= 0.50 THEN 'High Risk'
+             ELSE 'Unknown'
+         END AS dti_category,
+     
+         -- Credit Score Category
+         CASE 
+             WHEN credit_score >= 800 THEN 'Excellent'
+             WHEN credit_score >= 740 THEN 'Very Good'
+             WHEN credit_score >= 670 THEN 'Good'
+             WHEN credit_score >= 580 THEN 'Fair'
+             ELSE 'Poor'
+         END AS credit_score_category
+     
+     FROM users_data
+     WHERE yearly_income > 0;
+
  
 ![](10.png)
 
@@ -163,14 +354,51 @@ Some customers present unique profiles worth noting: Client 68: Has no debt and 
 
 Some customers manage to maintain good credit scores despite very high DTI, indicating they are likely making payments on time  but they are still overleveraged. These are vulnerable to economic shocks (e.g., job loss, inflation) and could shift from good payers to defaulters quickly.
 
+#### Most Common Card Errors
+
+     SELECT 
+         errors AS Type0fError,
+         COUNT(*) AS TotalError
+     FROM transactions_data
+     WHERE errors IS NOT NULL AND errors <> ''
+     GROUP BY errors
+     ORDER BY TotalError DESC;
+
 ![](7.png)
 
 Over 70% of all transaction errors are due to “Insufficient Balance”   This indicates that a large number of customers are attempting transactions beyond their available funds or credit limits. Next to that is Authentication Failures Signal Possible Fraud Attempts such as Bad PIN and Bad CVV errors. These are typical in unauthorized usage or brute-force attempts. While some may be user error, repeated failures—especially when combined may point to card testing or fraud. Other technical errors include bad card numbers and expired card attempts. These could be caused by POS system incompatibilities, merchant-side failures, or data formatting issues. However, the risk here is that this undermines customer trust and contributes to failed transactions that can impact revenue.
 
+#### Error Rate By City/State
 
-![](8.png)
+     SELECT 
+        t.merchant_state,
+         COUNT(*) AS Total_Transaction,
+         SUM(CASE WHEN errors IS NOT NULL AND errors <> '' THEN 1 ELSE 0 END) AS TotalError,
+         CAST(SUM(CASE WHEN errors IS NOT NULL AND errors <> '' THEN 1 ELSE 0 END) * 100.0 / 
+     	COUNT(*) AS DECIMAL(5,2)) AS ErrorRate
+     FROM transactions_data t
+     GROUP BY merchant_state
+     ORDER BY ErrorRate DESC;
+     
+     
+     ![](8.png)
+     
 
 Regions such as South Korea (33.33% error rate), Wyoming (WY) (6.90%), and Ireland (5.56%) report notably high error percentages. However, it’s important to emphasize that these regions also recorded very low transaction volumes, which means; the high error rates may not be statistically significant and the data could be skewed by a small number of problematic.  States such as Alabama (1.57%), Missouri (1.59%), Iowa (1.60%), and New York (1.66%) show consistently low error rates, despite handling a large number of transactions. This suggests; Stable processing environments, potentially stronger merchant infrastructure and more mature payment systems in these areas
+
+
+#### Error Rate By Card Type
+   
+     SELECT 
+         c.card_type,
+         COUNT(*) AS total_Transactions,
+         SUM(CASE WHEN t.errors IS NOT NULL AND t.errors <> '' THEN 1 ELSE 0 END) AS TotalError,
+         CAST(SUM(CASE WHEN t.errors IS NOT NULL AND t.errors <> '' THEN 1 ELSE 0 END) * 100.0 /
+     	COUNT(*) AS DECIMAL(5,2)) AS Error_Rate
+     FROM transactions_data t
+     JOIN cards_data c ON t.card_id = c.id
+     GROUP BY c.card_type
+     ORDER BY Error_Rate DESC;
 
 ![](9.png)
 
