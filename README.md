@@ -6,95 +6,88 @@ This project focuses on delivering strategic insights to Tawny Bank by analyzing
 
 ## About The Dataset
 
-*CARDS DATA SCHEMA*
+ Dataset Description
 
-id (Primary Key) ----- Unique identifier for each credit card.
+The dataset used for this analysis is composed of four primary tables, each representing a critical component of the banking ecosystem:
 
-client_id (Foreign Key to users_data.id)----- Identifier linking the card to its owner in the users_data table.
+1. users_data – Customer Information
+   
+This table contains detailed demographic and financial information for each user.
 
-card_brand------ Brand or issuer of the credit card (e.g., Visa, Mastercard).
+Field	Description
 
-card_type	----- Type/category of the card (e.g., debit, credit, etc.).
+|  |  | 
+|----------|----------|
+| id (Primary Key)  | Unique identifier for each user 
+| current_age  |  Current age of the user 
+| retirement_age |  Declared retirement age of the user 
+|  birth_year  |  Year of birth for the user 
+| gender	  |  Gender of the user ( male or female) 
+| address |  Residential address of the user 
+| latitude | Latitude of the user’s residence      
+| longitude | 	Longitude of the user’s residence 
+| per_capita_income  |  Per capita income of the user  
+| yearly_income  |  Total yearly income of the user 
+| total_debt |  Total amount of debt owed by the user 
+| credit_score  |  Credit score rating of the user 
+| num_credit_cards | Number of credit cards owned by the user 
+| current_age  |  retirement_age	Age details   
 
-card_number	----- Unique number on the credit card.
+2. cards_data – Card Attributes
+   
+This table links each card to a user and describes its properties.
 
-expires	----- Expiry date of the credit card.
+|  |  | 
+|----------|----------|
+| id (Primary Key)  |  Unique identifier for each credit card
+| client_id (Foreign Key to users_data.id)  | Identifier linking the card to its owner in the users_data table
+| card_brand  |  Brand or issuer of the credit card (e.g., Visa, Mastercard)
+| card_type  |  Type/category of the card (e.g., debit, credit, etc.)
+| card_number  |   Unique number on the credit card
+| expires  |   Expiry date of the credit card
+| card_number  |   Unique number on the credit card	
+| cvv  |   Security code of the card
+| has_chip	 |  Boolean/Flag indicating if the card has an EMV chip
+| num_cards_issued  |  Total number of cards issued for the same account
+| credit_limit  |   Credit limit assigned to the card
+| acct_open_date  |   Date the credit card account was opened
+| year_pin_last_changed | Year the card’s PIN was last changed
 
-cvv -----	 Security code of the card.
+3. transactions_data – Transaction Records
+   
+This table captures every transaction made using a card.
 
-has_chip	 -----Boolean/Flag indicating if the card has an EMV chip.
+|  |  | 
+|----------|----------|
+| id (Primary Key)    | Unique identifier for each transaction
+| date    | Date of the transaction
+| client_id (Foreign Key to users_data.id)    | Identifier linking the transaction to the user in the users_data table
+| card_id (Foreign Key to cards_data.id)  | Identifier linking the transaction to the respective card in the cards_data table
+| amount   | Transaction amount in the respective currency     
+| use_chip   | Boolean/Flag indicating if the chip was used during the transaction
+| merchant_id |  Unique identifier of the merchant
+| merchant_city   | City where the merchant is located  
+| merchant_state   | State where the merchant is located   
+| zip    | ZIP code of the merchant's location 
+| mcc (Foreign Key to mcc_codes.mcc_id)    | Merchant Category Code representing the type of merchant or transaction.
+| errors   | Any errors encountered during the transaction (if any)  
 
-num_cards_issued	----- Total number of cards issued for the same account.
+4. mcc_codes – Merchant Categories
 
-credit_limit-----	 Credit limit assigned to the card.
+This table categorizes merchants based on their business type.
 
-acct_open_date-----	 Date the credit card account was opened.
+|  |  | 
+|----------|----------|
+| mcc_id (Primary Key)    | Unique identifier for each Merchant Category Code  
+| Description   | Description of the merchant category (e.g., grocery, travel, entertainment)
 
-year_pin_last_changed -----	 Year the card’s PIN was last changed.
-
-*USER DATA SCHEMA*
-
-id (Primary Key)	----- Unique identifier for each user.
-
-current_age -----	 Current age of the user.
-
-retirement_age	----- Declared retirement age of the user.
-
-birth_year -----	 Year of birth for the user.
-
-birth_month	----- Month of birth for the user.
-
-gender	----- Gender of the user ( male or female).
-
-address	----- Residential address of the user.
-
-latitude	----- Latitude of the user’s residence.
-
-longitude	----- Longitude of the user’s residence.
-
-per_capita_income	 ----- Per capita income of the user.
-
-yearly_income	-----  Total yearly income of the user.
-
-total_debt ----- Total amount of debt owed by the user.
-
-credit_score	----- Credit score rating of the user.
-
-num_credit_cards	----- Number of credit cards owned by the user.
-
-*MCC CODES SCHEMA*
-
-mcc_id (Primary Key)-----	Unique identifier for each Merchant Category Code.
-
-Description	----- Description of the merchant category (e.g., grocery, travel, entertainment).
-
-*TRANSACTIONS DATA SCHEMA*
-
-id (Primary Key)	----- Unique identifier for each transaction.
-
-date	----- Date of the transaction.
-
-client_id (Foreign Key to users_data.id)	----- Identifier linking the transaction to the user in the users_data table.
-
-card_id (Foreign Key to cards_data.id)	----- Identifier linking the transaction to the respective card in the cards_data table.
-
-amount	----- Transaction amount in the respective currency.
-
-use_chip	----- Boolean/Flag indicating if the chip was used during the transaction.
-
-merchant_id	----- Unique identifier of the merchant.
-
-merchant_city	----- City where the merchant is located.
-
-merchant_state	----- State where the merchant is located.
-
-zip	----- ZIP code of the merchant's location.
-
-mcc (Foreign Key to mcc_codes.mcc_id)	----- Merchant Category Code representing the type of merchant or transaction.
-
-errors	----- Any errors encountered during the transaction (if any).
-
-## Tool Used: SQL Server
+# Tool and Concept 
+#### SQL
+#### SQL Server
+#### Data Exploration
+#### Aggregation
+#### Triggers
+#### CTE
 
 ## Objective
 
@@ -378,12 +371,11 @@ Over 70% of all transaction errors are due to “Insufficient Balance”   This 
      	COUNT(*) AS DECIMAL(5,2)) AS ErrorRate
      FROM transactions_data t
      GROUP BY merchant_state
-     ORDER BY ErrorRate DESC;
+     ORDER BY ErrorRate DESC; 8.png
      
      
-     ![](8.png)
+ ![](8.png)
      
-
 Regions such as South Korea (33.33% error rate), Wyoming (WY) (6.90%), and Ireland (5.56%) report notably high error percentages. However, it’s important to emphasize that these regions also recorded very low transaction volumes, which means; the high error rates may not be statistically significant and the data could be skewed by a small number of problematic.  States such as Alabama (1.57%), Missouri (1.59%), Iowa (1.60%), and New York (1.66%) show consistently low error rates, despite handling a large number of transactions. This suggests; Stable processing environments, potentially stronger merchant infrastructure and more mature payment systems in these areas
 
 
