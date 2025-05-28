@@ -389,10 +389,6 @@ All card types have error rates below 2%, which suggests that our core transacti
 
 ## Recommendation
 
-•	Block cards after 3+ consecutive failed transactions per day
-
-•	Flag chip-enabled cards used via swipe or online as potential fraud
-
 •	Detect multiple online transactions within 1 hour from different locations
 
 •	Monitor repeated bad PIN/CVV attempts for card compromise
@@ -413,7 +409,7 @@ All card types have error rates below 2%, which suggests that our core transacti
 
 •	Use low-error regions (e.g., AL, MO, NY) as system reliability benchmarks
 
-•	Keep fraud trigger logs active for chip bypass detection
+•	Keep fraud trigger logs active wrong pins
 
 •	Monitor monthly error trends across card types and locations
 
