@@ -127,9 +127,9 @@ Support Data-Driven Decisions
 
 ##### --- Trigger to Block Card After 5+ Bad PIN Errors
 
---Create the transaction log table
-IF OBJECT_ID('transaction_trigger_log', 'U') IS NULL
-BEGIN
+     --Create the transaction log table
+     IF OBJECT_ID('transaction_trigger_log', 'U') IS NULL
+    BEGIN
     CREATE TABLE transaction_trigger_log (
         log_id INT IDENTITY(1,1) PRIMARY KEY,
         transaction_date DATETIME,
@@ -143,19 +143,19 @@ BEGIN
         is_fraud_suspected BIT,
         reason VARCHAR(255),
         logged_at DATETIME DEFAULT GETDATE()
-    );
-END;
-GO
+        );
+       END;
+     GO
 
-IF OBJECT_ID('trg_flag_bad_pin2', 'TR') IS NOT NULL
-DROP TRIGGER trg_flag_bad_pin2;
-GO
----Create the trigger
-CREATE TRIGGER trg_flag_bad_pin2
-ON transactions_data
-AFTER INSERT
-AS
-BEGIN
+     IF OBJECT_ID('trg_flag_bad_pin2', 'TR') IS NOT NULL
+     DROP TRIGGER trg_flag_bad_pin2;
+     GO
+     ---Create the trigger
+     CREATE TRIGGER trg_flag_bad_pin2
+     ON transactions_data
+     AFTER INSERT
+     AS
+     BEGIN
     SET NOCOUNT ON;
 
     -- Log and flag cards with more than 5 Bad PIN errors
@@ -170,8 +170,8 @@ BEGIN
         used_chip,
         is_fraud_suspected,
         reason
-    )
-    SELECT 
+        )
+        SELECT 
         i.date,
         i.client_id,
         i.card_id,
@@ -214,12 +214,12 @@ The trigger is important because; repeated PIN failures are often a sign of card
 
 #### Stop transactions above customer credit limit
 
--- Create new trigger to block over-limit transactions
-CREATE TRIGGER trg_block_overlimit_transactions
-ON transactions_data
-INSTEAD OF INSERT
-AS
-BEGIN
+     -- Create new trigger to block over-limit transactions
+     CREATE TRIGGER trg_block_overlimit_transactions
+     ON transactions_data
+     INSTEAD OF INSERT
+     AS
+     BEGIN
     SET NOCOUNT ON;
 
     -- Insert only those that stay within the credit limit
@@ -241,8 +241,8 @@ BEGIN
     ) + i.amount <= c.credit_limit;
     
     -- Optional: You can log failed attempts in a separate table
-END;
-GO
+     END;
+     GO
 
 This trigger was implemented to enforce real-time credit control by automatically preventing transactions that would exceed a card’s assigned credit limit. It ensures that all cardholders operate within approved transaction limit, minimizing the risk of overspending and maintaining the bank’s credit exposure discipline.
 
@@ -254,7 +254,7 @@ When a new transaction is attempted, the trigger:
 If the new transaction would not exceed the credit limit then record is inserted successfully and if it would exceed the limit, the transaction is silently blocked (i.e., not inserted).
  Why this logic is important is that it ensures customers cannot transact beyond their approved credit line, supporting responsible credit usage and minimizing default risk. It also Maintains strict control over issued credit, reducing the risk of financial loss due to overspending or system loopholes. It removes the need for manual checks or post-factum reversals, enabling real-time compliance at the data layer and lastly  helps prevent issues like failed settlements, chargebacks, or overdrafts resulting from exceeding credit limit
 
-##### Flag  more than  transactions done with an hour online at different locations and where the amount was increased per transaction
+##### Flag  more than 5 transactions done with an hour online at different locations and where the amount was increased per transaction
 
      WITH ordered_txn AS (
          SELECT
